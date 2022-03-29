@@ -8,17 +8,17 @@
 
 import UIKit
 import CoreData
+import RealmSwift
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: UITableViewController, UIPickerViewDelegate, UIImagePickerControllerDelegate {
     var itemArray = [Item]()
 
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-//        loadItems()
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        loadItems(with: request)
     }
     
     //MARK: - TableView Datasource Methods
@@ -81,15 +81,26 @@ class TodoListViewController: UITableViewController {
         self.tableView.reloadData()
     }
     
-//    func loadItems() {
-//        if let data = try? Data(contentsOf: dataFilePath!) {
-//            let decoder = PropertyListDecoder()
-//            do {
-//                itemArray = try decoder.decode([Item].self, from: data)
-//            } catch {
-//                print("Error decoding item array")
-//            }
-//        }
-//    }
+    func loadItems(with requset: NSFetchRequest<Item>) {
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetching data from context \(error)")
+        }
+    }
 }
 
+//MARK: - Search bar methods
+
+extension TodoListViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        loadItems(with: request)
+        tableView.reloadData()
+    }
+}
